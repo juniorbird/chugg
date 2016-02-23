@@ -1,0 +1,86 @@
+Gulp File
+
+1
+var gulp = require('gulp');
+2
+var browserify = require('browserify');
+3
+var babelify = require('babelify');
+4
+var watchify = require('watchify');
+5
+var source = require('vinyl-source-stream');
+6
+var notify = require('gulp-notify');
+7
+var nodemon = require('gulp-nodemon');
+8
+​
+9
+function handleErrors() {
+10
+    var args = Array.prototype.slice.call(arguments);
+11
+    notify.onError({
+12
+        title : 'Compile Error',
+13
+        message : '<%= error.message %>'
+14
+    }).apply(this, args);
+15
+    this.emit('end'); //keeps gulp from hanging on this task
+16
+    }
+17
+function buildScript(file, watch) {
+18
+    var props = {
+19
+        entries : ['./components/' + file],
+20
+        debug : true,
+21
+        transform : babelify.configure({
+22
+            presets: ['react', 'es2015']
+23
+        })
+24
+};
+25
+​
+26
+//watchify if watch set to true. otherwise browserify once
+27
+var bundler = watch ? watchify(browserify(props)) : browserify(props);
+28
+function rebundle(){
+29
+    var stream = bundler.bundle();
+30
+    return stream
+31
+        .on('error', handleErrors)
+32
+        .pipe(source('bundle.js'))
+33
+        .pipe(gulp.dest('./build/'));
+34
+    }
+35
+        bundler.on('update', function() {
+36
+        var updateStart = Date.now();
+37
+        rebundle();
+38
+    •console.log('Updated!', (Date.now() - updateStart) + 'ms');
+39
+    })
+40
+​
+41
+    // run it once the first time buildScript is called
+42
+    return rebundle();
